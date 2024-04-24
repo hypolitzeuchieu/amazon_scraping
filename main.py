@@ -2,7 +2,6 @@ from amazon_bot import AmazonBot
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
-import sys
 from pymongo.server_api import ServerApi
 
 load_dotenv()

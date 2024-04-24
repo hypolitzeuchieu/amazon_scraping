@@ -1,4 +1,4 @@
-import pprint
+import datetime
 
 from selenium import webdriver
 from selenium.common import NoSuchElementException
@@ -65,10 +65,12 @@ class AmazonBot:
         try:
             self.driver.get(product_url)
             return {
+                'url': product_url,
                 'product_title': self.get_product_title(product_url),
                 'rating': self.get_product_rating(product_url),
                 'number_of_reviews': self.get_product_nb_reviewers(product_url),
-                'product_price': self.get_product_price(product_url)
+                'product_price': self.get_product_price(product_url),
+                'update_at': datetime.datetime.now()
             }
         except Exception as e:
             print(f"Error to fetch content from {product_url}: {e}")
@@ -76,9 +78,10 @@ class AmazonBot:
     def scrape_urls(self):
         product_urls = self.mongodb_client['amazon_db']['products_urls'].find()
         for product_url in product_urls:
-            data = self.get_product_data(product_url['url'])
-            pprint.pprint(data)
+            print(product_url)
             print()
+            data = self.get_product_data(product_url['url'])
+            self.mongodb_client['amazon_db']['products_data'].update_many({'url': data['url']}, {'$set': data}, upsert=True)
 
     def close(self):
         self.driver.close()
