@@ -9,13 +9,14 @@ from selenium.webdriver.common.by import By
 
 
 class AmazonBot:
-    def __init__(self):
+    def __init__(self, mongodb_client):
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36"
         chrome_options = Options()
         chrome_options.add_argument(f"user-agent={user_agent}")
         chrome_options.add_experimental_option("detach", True)
         self.driver = webdriver.Chrome(options=chrome_options)
         self.wait = WebDriverWait(self.driver, 10)
+        self.mongodb_client = mongodb_client
 
     def get_product_title(self, product_url) -> str:
         try:
@@ -72,23 +73,12 @@ class AmazonBot:
         except Exception as e:
             print(f"Error to fetch content from {product_url}: {e}")
 
-    def scrape_urls(self, product_urls):
+    def scrape_urls(self):
+        product_urls = self.mongodb_client['amazon_db']['products_urls'].find()
         for product_url in product_urls:
-            data = self.get_product_data(product_url)
+            data = self.get_product_data(product_url['url'])
             pprint.pprint(data)
             print()
 
     def close(self):
         self.driver.close()
-
-
-products_urls = [
-    "https://www.amazon.com/Apple-iPhone-128GB-Pacific-Blue/dp/B08PMYLKVF/ref=vse_cards_0?_encoding=UTF8",
-    "https://www.amazon.com/Apple-2024-MacBook-15-inch-Laptop/dp/B0CX23GFMJ?ref_=ast_sto_dp&psc=1",
-    "https://www.amazon.com/Apple-iPhone-256GB-Midnight-Green/dp/B08BHXC5ZS/ref=sr_1_3?sr=8-3",
-    "https://www.amazon.com/Apple-iPhone-11-64GB-White/dp/B07ZPJW2XH/ref=vse_cards_2?_encoding=UTF8"
-]
-
-bot = AmazonBot()
-bot.scrape_urls(products_urls)
-bot.close()

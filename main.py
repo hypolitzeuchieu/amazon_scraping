@@ -1,12 +1,25 @@
-import requests
+from amazon_bot import AmazonBot
+from pymongo import MongoClient
+from dotenv import load_dotenv
+import os
+import sys
+from pymongo.server_api import ServerApi
 
+load_dotenv()
 
-def main(url: str):
-    response = requests.get(url)
-    print(response.status_code)
+try:
+    uri = "mongodb+srv://"+os.getenv("MONGODB_USERNAME") + \
+          ":"+os.getenv("MONGODB_PASSWORD") + \
+           "@"+os.getenv("MONGODB_DOMAIN") + \
+          "/?retryWrites=true&w=majority&appName=Cluster0"
+    client = MongoClient(uri, server_api=ServerApi('1'))
+    client.server_info()
 
+except Exception as e:
+    print(f"something went wrong to mongodb:{e}")
+    raise e
 
-if __name__ == '__main__':
-    link = "https://www.amazon.com/Apple-iPhone-256GB-Midnight-Green/dp/B08BHXC5ZS/ref=sr_1_3?sr=8-3"
+bot = AmazonBot(mongodb_client=client)
 
-    print(main(link))
+bot.scrape_urls()
+bot.close()
