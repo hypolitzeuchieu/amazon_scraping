@@ -45,21 +45,22 @@ class AmazonBot:
             print(f"error to fetch number of reviews from {product_url}: {e}")
             return None
 
-    def get_product_price(self, product_url: str):
+    def get_product_price(self, product_url: str) -> float:
         try:
             self.driver.get(product_url)
 
             xpath = '//*[@id="corePrice_desktop"]/div/table/tbody/tr[2]/td[2]/span[1]/span[2]'
             prices = self.wait.until(EC.presence_of_element_located((By.XPATH, xpath))).text[1:]
-            return prices
+            return float(prices)
         except Exception:
             path = '//*[@id="usedBuySection"]/div[1]/div/span[2]'
             prices = self.wait.until(EC.presence_of_element_located((By.XPATH, path))).text[1:]
-            return prices
+            prices = prices.replace(',', '')
+            return float(prices)
 
         except NoSuchElementException as e:
             print(f"error to fetch price from {product_url}: {e}")
-        return None
+        return 0.0
 
     def get_product_data(self, product_url):
         try:
@@ -78,10 +79,28 @@ class AmazonBot:
     def scrape_urls(self):
         product_urls = self.mongodb_client['amazon_db']['products_urls'].find()
         for product_url in product_urls:
-            print(product_url)
-            print()
             data = self.get_product_data(product_url['url'])
-            self.mongodb_client['amazon_db']['products_data'].update_many({'url': data['url']}, {'$set': data}, upsert=True)
+            self.mongodb_client['amazon_db']['products_data'].update_many({'url': data['url']}, {'$set': data},
+                                                                          upsert=True)
+
+            try:
+                last_product_price = self.mongodb_client['amazon_db']['products_prices'].find(
+                    {'url': data['url']}).sort([('created_at', -1)]).limit(1).next()
+            except StopIteration:
+                last_product_price = None
+
+            if last_product_price is None:
+                self.mongodb_client['amazon_db']['products_prices'].insert_one({
+                    'url': product_url['url'],
+                    'product_price': data['product_price'],
+                    'created_at': datetime.datetime.now()
+                })
+            elif last_product_price is not None and last_product_price['product_price'] != data['product_price']:
+                self.mongodb_client['amazon_db']['products_prices'].insert_one({
+                    'url': product_url['url'],
+                    'product_price': product_url['product_price'],
+                    'created_at': datetime.datetime.now()
+                })
 
     def close(self):
         self.driver.close()
