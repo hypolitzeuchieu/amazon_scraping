@@ -120,10 +120,10 @@ class AmazonBot:
                         dif_price_percentage = (1 - data['product_price'] / last_product_price['product_price']) * 100
                         if dif_price_percentage > 0:
                             message = f"""
-                                The price of {self.get_product_title(product_url)} decrease by {dif_price_percentage} % 
-                                of {product_url['url']} .
-                                previous price: {last_product_price['product_price']} .
-                                new price : {data['product_price']} .                           
+                                The price of {self.get_product_title(product_url)} decrease by {dif_price_percentage} %, 
+                                from {product_url['url']} .
+                                Previous price: {last_product_price['product_price']} .
+                                New price : {data['product_price']} .                           
                             """
                             message = message.encode('utf-8')
                             self.server_smtp.sendmail('hypolithypolit@gmail.com', 'hypolithypolit@gmail.com', message)
